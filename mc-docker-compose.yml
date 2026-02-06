@@ -1,0 +1,178 @@
+services:
+  database:
+    image: 'postgres:bookworm'
+    ports:
+      - 5455:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  redis-server:
+    image: redis:6.0
+    ports:
+      - "6379:6379"
+    restart: always
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: wurstmeister/kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka:9092,OUTSIDE://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:9092,OUTSIDE://0.0.0.0:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+  local-platform-service:
+    image: 'anushas/mock-platform:local'
+    user: root
+    ports: 
+      - 8080:8080
+
+  immigration-system:
+    image: 'anushas/mock-identity-system:develop'
+    user: root
+    ports:
+      - 8082:8082
+    environment:
+      - container_user=mosip
+      - active_profile_env=default,local
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/mosip_mockidentitysystem?currentSchema=mockidentitysystem
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - MOSIP_MOCK_IDA_KYC_TRANSACTION_TIMEOUT_SECS=900
+      - MOSIP_ESIGNET_HOST=localhost:8088
+      - MOSIP_MOCK_IDA_IDENTITY_SCHEMA_URL=http://local-platform-service:8080/masterdata/identity-schema
+    depends_on:
+      - database
+
+  esignet:
+    image: 'mosipdev/esignet-with-plugins:develop'
+    user: root
+    ports: 
+      - 8088:8088
+    environment:
+      - container_user=mosip
+      - active_profile_env=default,local
+      - plugin_name_env=esignet-mock-plugin.jar
+      - MOSIP_ESIGNET_DATABASE_URL=jdbc:postgresql://database:5432/mosip_esignet?currentSchema=esignet
+      - MOSIP_ESIGNET_DATABASE_USERNAME=postgres
+      - MOSIP_ESIGNET_DATABASE_PASSWORD=postgres
+      - MOSIP_ESIGNET_MOCK_DOMAIN_URL=http://immigration-system:8082
+      - MOSIP_ESIGNET_INTEGRATION_KEY_BINDER=MockKeyBindingWrapperService
+      - SPRING_DATA_REDIS_HOST=redis-server
+      - KAFKA_ENABLED=false
+      - SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+      - MOSIP_SIGNUP_DOMAIN_URL=http://localhost:4000
+      - MOSIP_ESIGNET_DOMAIN_URL=http://esignet:8088
+    depends_on:
+      - database
+      - redis-server
+
+  esignet-ui:
+    image: 'mosipdev/oidc-ui:develop'
+    user: root
+    ports:
+      - 3000:3000
+    environment:
+      - container_user=mosip
+      - DEFAULT_WELLKNOWN=%5B%7B%22name%22%3A%22OpenID%20Configuration%22%2C%22value%22%3A%22%2F.well-known%2Fopenid-configuration%22%7D%2C%7B%22name%22%3A%22Jwks%20Json%22%2C%22value%22%3A%22%2F.well-known%2Fjwks.json%22%7D%2C%7B%22name%22%3A%22Authorization%20Server%22%2C%22value%22%3A%22%2F.well-known%2Foauth-authorization-server%22%7D%5D
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - esignet
+
+  signup:
+      image: 'anushas/signup-with-plugins:ES-2797'
+      user: root
+      ports: 
+        - 8089:8089
+      environment:
+        - container_user=mosip
+        - active_profile_env=default,local
+        - plugin_name_env=esignet-mock-plugin.jar
+        - MOSIP_SIGNUP_DOMAIN_URL=http://signup:8089
+        - MOSIP_ESIGNET_DOMAIN_URL=http://localhost:3000
+        - MOSIP_ESIGNET_MOCK_DOMAIN_URL=http://immigration-system:8082
+        - KEYCLOAK_EXTERNAL_URL=http://local-platform-service:8080
+        - SPRING_CACHE_TYPE=redis
+        - SPRING_DATA_REDIS_HOST=redis-server
+        - SPRING_DATA_REDIS_PASSWORD=
+        - MOSIP_INTERNAL_DOMAIN_URL=http://local-platform-service:8080
+        - MOSIP_SIGNUP_CLIENT_SECRET=test
+        - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+        - SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+        - MOSIP_SIGNUP_MOCK_GET_SCHEMA_ENDPOINT=http://local-platform-service:8080/masterdata/ui-spec
+        - MOSIP_SIGNUP_IDENTIFIER_REGEX=^[a-zA-Z_@\\.]+
+        - MOSIP_SIGNUP_IDENTIFIER_PREFIX=
+        - MANAGEMENT_TRACING_ENABLED=false
+        - MOSIP_SIGNUP_IDENTIFIER_ALLOWED_CHARACTERS=^[a-zA-Z_@\\.]+
+        - MOSIP_SIGNUP_IDENTIFIER_MIN_LENGTH=8
+        - MOSIP_SIGNUP_IDENTIFIER_MAX_LENGTH=20
+        - MOSIP_SIGNUP_IDENTIFIER_NAME=email
+        - MOSIP_SIGNUP_MOCK_MANDATORY_ATTRIBUTES_CREATE=email,passportId,expireDate,consent
+        - MOSIP_SIGNUP_MOCK_MANDATORY_ATTRIBUTES_UPDATE=
+        - MOSIP_SIGNUP_MOCK_USERNAME_FIELD=email
+      depends_on:
+        - redis-server
+      volumes:
+        - ./oidckeystore.p12:/home/mosip/keys/oidckeystore.p12
+
+  signup-ui:
+    image: 'mosipdev/signup-ui:ES-2797'
+    user: root
+    ports:
+      - 4000:3000
+    environment:
+      - container_user=mosip
+      - REACT_APP_API_BASE_URL=http://signup:8089/v1/signup
+    volumes:
+      - ./signup-nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - signup
+
+  omera-bank-service:
+    image: 'mosipdev/mock-relying-party-service:develop'
+    user: root
+    ports:
+      - 8888:8888
+    environment:
+      - container_user=mosip
+      - ESIGNET_SERVICE_URL=http://esignet:8088/v1/esignet
+      - ESIGNET_AUD_URL=http://esignet:8088/v1/esignet/oauth/v2/token
+      - CLIENT_PRIVATE_KEY=ewogICAgImt0eSI6ICJSU0EiLAogICAgIm4iOiAiN0FEVXdvT1FtWEl2cXhsaWdLalZ1LU43SWk3Mjh1by1aRU1paTdxZ2hhT1Q1c2VlbUxybjRXMDlBVEVSM25seWs0S29CSGlYQnRJWUJJQ01VYlp1NXFyOVRjSDlQZ1dKeHVTbHBtdTVHYWtsNktsVzdUS2FhdWtRRENmM0dNTlhndElqMTVEUUJrTHgtbHlCRGJpcGNsTGY0RHNLM0g4bF9vZFlSREVTN0htZWs4Q0cyaHF3dUk1eWFrUVJUSXprRkRRQXA5X2tZQ09nSTdaRHZjcktwNHhIcEJ3UVlUOWllNzhPLTZDRk5sazlQTXhtcVpSZWdrR3ljaGVsSWFHOGYwb0xteXhweFpIRlpkUmFqd3lNbU5tSUkwaFd0ZTR5MG5sMEMyMkpBMWRzaS01Mm8yazVlT05kb1Rib3lsd2M1NFAwYWJqSVRPcmtxbGlMZnpsNjNRIiwKICAgICJlIjogIkFRQUIiLAogICAgImQiOiAiVkhXZnJ0VWl4S2VHdzdiYjk2dDBnajlRNjlUZTctUkEyLVRpMGhyQ0k5Rjh0dFN0djM3MFNVcXMwR1pkUEw4OTctaU1kTDByWDNlRXZPZThULW40R25rTEdlN1kwSDl1NVUwaXMwSk9CZzd3MENqNlFQMGhJaTJ5WG9kVy1QZV9zOE84ckFMWlQ4UlprUDNWLWJFaWd4V0JwVi03N1ZsYm9aR1NWeVV3M291ZjhsZTV4UHFPcFhwenl4NUQyRW9OSVZNWUMybndnRjJUZGNkNUt0ZkpYTjB2NFphbER4ejB0MkFYWVFDNVFPQjE0NWNHamtJTW5EY1pKQTc4ZWwyaXR2N1YwSGI0b3Uta3RhN2xnOGFBcl96NVFTZXJHVUtoSDhldmtPM25ZRUJjMG4tSW1TTm5ONmZkcXRZM2dGNWlFYWFwTHF2a1laYzNNdURUZURKekNRIiwKICAgICJwIjogIjlfUlpjN2p6UXJOSVdpWF9KamJRZkNBNzZVX3FwaVgwcmU2N3ByZEctUWVObEJaNi1INng4ZF9NSlR6NXBaSUltWlVMbFVWbnNZWFA5eEdlTDJ2REVkOWJxVXh0SUhSQ3Z0MlVCdE1BU3VmOVVrblB6M01lMlRkTHpRN2tFZUptMmwyRlhMYTVEeEZpQjdSNmJwbGswd1pGcUpRM2xDOEdRWDhQM3FMT2lKOCIsCiAgICAicSI6ICI4NmsxTnItU0RTa2c0ZlZhYnFCUVQzZHkwMzJTT1NqT1RvaHN1dWdfaUZBWFhIRjJmdmY5UnRLd2lxOWtQdW1FNUZDcDJlbXVFd1E0Q3RqZGhjTTA1NmVJYmVLWHprangyLTF2X1p1bTZyY0ZHeXZfOVcwNmdsWWZEaUJZQ2ZvbWxxV2tWZml4MGlKYm52QTFYakxvX0RWZU9YQktETEtQUUhQMG9FYVpmd00iLAogICAgImRwIjogImdSZ21EbnNIb18yRnVQRzVjdUx0RHdNVlRqYS1lM3lkZElVc0NfTzJMdWZBelk0YXZnX3dnM2E2YWRUaVFWTFR5V3B4R21tRlFFYmo3TVd1YnhBVEF0WWdlZmVCaFhraVd3OHdCNUdKd0hZaVROcURLSVhPVk5kV1RzX203R3pNa2ZwSS1lbGtWalQ5cmZkSUd4Y2dDRUptdUF0YkdIcVhMamlDUWE3UUN3OCIsCiAgICAiZHEiOiAiRzFHNWVhMzRfaWpDV3hOYlZGUDlMU3ZEWUJzUUxnQjVRU3ppcEFJdVBXWmRlQ3Z3a1VQVXpnQUpjME1fQmg3QW02aV9vb01rMVZUX3c1ZVZIczVJUEVENGR2bVU4N2dTQmdxVkotWXZ6TmxBWlUtRm4wcmo2SUVuY2pvR0pQZzdJMkRuRUF5V1EyMC13STlHTEkyZ3VjWnlEaGFjOXRkLVlFZWdBZWhvaFdrIiwKICAgICJxaSI6ICJvbndWZV93ZW5wdnV5MnZXeExUa1U4NjR3a21DVTlBb19DMFZWcXQzVktsOU9ZTHdKOE5zMG1CRm5UVHhISVRPREgxT1lDWFN3ZkkzQjBQNFhnTklqY294M0VaaWotVFBuSmdRZHRHaTB3ekVNSm1wc2tZbnJmN1pLRTB3Y0hZXzVUbVdKWE1qOGt2QnY2OXB0Rnh2UlczUXZ6aDVrSFNUZnBMME9qanUxMTQiCn0=
+      - JWE_USERINFO_PRIVATE_KEY=ewogICAgImt0eSI6ICJSU0EiLAogICAgIm4iOiAiN0FEVXdvT1FtWEl2cXhsaWdLalZ1LU43SWk3Mjh1by1aRU1paTdxZ2hhT1Q1c2VlbUxybjRXMDlBVEVSM25seWs0S29CSGlYQnRJWUJJQ01VYlp1NXFyOVRjSDlQZ1dKeHVTbHBtdTVHYWtsNktsVzdUS2FhdWtRRENmM0dNTlhndElqMTVEUUJrTHgtbHlCRGJpcGNsTGY0RHNLM0g4bF9vZFlSREVTN0htZWs4Q0cyaHF3dUk1eWFrUVJUSXprRkRRQXA5X2tZQ09nSTdaRHZjcktwNHhIcEJ3UVlUOWllNzhPLTZDRk5sazlQTXhtcVpSZWdrR3ljaGVsSWFHOGYwb0xteXhweFpIRlpkUmFqd3lNbU5tSUkwaFd0ZTR5MG5sMEMyMkpBMWRzaS01Mm8yazVlT05kb1Rib3lsd2M1NFAwYWJqSVRPcmtxbGlMZnpsNjNRIiwKICAgICJlIjogIkFRQUIiLAogICAgImQiOiAiVkhXZnJ0VWl4S2VHdzdiYjk2dDBnajlRNjlUZTctUkEyLVRpMGhyQ0k5Rjh0dFN0djM3MFNVcXMwR1pkUEw4OTctaU1kTDByWDNlRXZPZThULW40R25rTEdlN1kwSDl1NVUwaXMwSk9CZzd3MENqNlFQMGhJaTJ5WG9kVy1QZV9zOE84ckFMWlQ4UlprUDNWLWJFaWd4V0JwVi03N1ZsYm9aR1NWeVV3M291ZjhsZTV4UHFPcFhwenl4NUQyRW9OSVZNWUMybndnRjJUZGNkNUt0ZkpYTjB2NFphbER4ejB0MkFYWVFDNVFPQjE0NWNHamtJTW5EY1pKQTc4ZWwyaXR2N1YwSGI0b3Uta3RhN2xnOGFBcl96NVFTZXJHVUtoSDhldmtPM25ZRUJjMG4tSW1TTm5ONmZkcXRZM2dGNWlFYWFwTHF2a1laYzNNdURUZURKekNRIiwKICAgICJwIjogIjlfUlpjN2p6UXJOSVdpWF9KamJRZkNBNzZVX3FwaVgwcmU2N3ByZEctUWVObEJaNi1INng4ZF9NSlR6NXBaSUltWlVMbFVWbnNZWFA5eEdlTDJ2REVkOWJxVXh0SUhSQ3Z0MlVCdE1BU3VmOVVrblB6M01lMlRkTHpRN2tFZUptMmwyRlhMYTVEeEZpQjdSNmJwbGswd1pGcUpRM2xDOEdRWDhQM3FMT2lKOCIsCiAgICAicSI6ICI4NmsxTnItU0RTa2c0ZlZhYnFCUVQzZHkwMzJTT1NqT1RvaHN1dWdfaUZBWFhIRjJmdmY5UnRLd2lxOWtQdW1FNUZDcDJlbXVFd1E0Q3RqZGhjTTA1NmVJYmVLWHprangyLTF2X1p1bTZyY0ZHeXZfOVcwNmdsWWZEaUJZQ2ZvbWxxV2tWZml4MGlKYm52QTFYakxvX0RWZU9YQktETEtQUUhQMG9FYVpmd00iLAogICAgImRwIjogImdSZ21EbnNIb18yRnVQRzVjdUx0RHdNVlRqYS1lM3lkZElVc0NfTzJMdWZBelk0YXZnX3dnM2E2YWRUaVFWTFR5V3B4R21tRlFFYmo3TVd1YnhBVEF0WWdlZmVCaFhraVd3OHdCNUdKd0hZaVROcURLSVhPVk5kV1RzX203R3pNa2ZwSS1lbGtWalQ5cmZkSUd4Y2dDRUptdUF0YkdIcVhMamlDUWE3UUN3OCIsCiAgICAiZHEiOiAiRzFHNWVhMzRfaWpDV3hOYlZGUDlMU3ZEWUJzUUxnQjVRU3ppcEFJdVBXWmRlQ3Z3a1VQVXpnQUpjME1fQmg3QW02aV9vb01rMVZUX3c1ZVZIczVJUEVENGR2bVU4N2dTQmdxVkotWXZ6TmxBWlUtRm4wcmo2SUVuY2pvR0pQZzdJMkRuRUF5V1EyMC13STlHTEkyZ3VjWnlEaGFjOXRkLVlFZWdBZWhvaFdrIiwKICAgICJxaSI6ICJvbndWZV93ZW5wdnV5MnZXeExUa1U4NjR3a21DVTlBb19DMFZWcXQzVktsOU9ZTHdKOE5zMG1CRm5UVHhISVRPREgxT1lDWFN3ZkkzQjBQNFhnTklqY294M0VaaWotVFBuSmdRZHRHaTB3ekVNSm1wc2tZbnJmN1pLRTB3Y0hZXzVUbVdKWE1qOGt2QnY2OXB0Rnh2UlczUXZ6aDVrSFNUZnBMME9qanUxMTQiCn0=
+      - USERINFO_RESPONSE_TYPE=jwt
+
+  omera-bank-ui:
+    image: 'mosipdev/mock-relying-party-ui:develop'
+    user: root
+    ports:
+      - 5001:3000
+    environment:
+      - container_user=mosip
+      - ESIGNET_UI_BASE_URL=http://localhost:3000
+      - MOCK_RELYING_PARTY_SERVER_URL=http://localhost:5001/mock-relying-party-service
+      - REDIRECT_URI=http://localhost:5001/userprofile
+      - REDIRECT_URI_REGISTRATION=http://localhost:5001/registration
+      - CLIENT_ID=IIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7ADUw
+      - ACRS=mosip:idp:acr:generated-code%20mosip:idp:acr:biometrics
+      - SIGN_IN_BUTTON_PLUGIN_URL=http://localhost:3000/plugins/sign-in-button-plugin.js
+      - CLAIMS_LOCALES=en
+      - SCOPE_USER_PROFILE=openid profile
+      - CLAIMS_USER_PROFILE=%7B%22userinfo%22%3A%7B%22name%22%3A%7B%22essential%22%3Afalse%7D%2C%22phone_number%22%3A%7B%22essential%22%3Atrue%7D%20%7D%2C%22id_token%22%3A%7B%7D%7D
+      - CLAIMS_REGISTRATION=%7B%22userinfo%22%3A%7B%22name%22%3A%7B%22essential%22%3Afalse%7D%2C%22phone_number%22%3A%7B%22essential%22%3Atrue%7D%20%7D%2C%22id_token%22%3A%7B%7D%7D
+    volumes:
+      - ./omera-nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - omera-bank-service
