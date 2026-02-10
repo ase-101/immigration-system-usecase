@@ -51,6 +51,20 @@ func main() {
                 "alignmentGroup": "groupA"
             },
             {
+                "id": "fullName",
+                "controlType": "textbox",
+                "labelName": {
+                    "en": "FullName"
+                },
+                "placeholder": {
+                    "eng": "Enter your fullName"
+                },
+                "validators": [],
+                "required": true,
+                "prefix": [],
+                "alignmentGroup": "groupAa"
+            },
+            {
                 "id": "homeCountry",
                 "controlType": "dropdown",
                 "labelName": {
@@ -75,15 +89,6 @@ func main() {
                 },
                 "required": true,
                 "alignmentGroup": "groupM"
-            },
-			{
-                "id": "expireDate",
-                "controlType": "date",
-                "labelName": {
-                    "eng": "Passport Expire Date"
-                },
-                "alignmentGroup": "expiredate",
-                "required": true
             },
             {
                 "id": "encodedPhoto",
@@ -179,13 +184,12 @@ func main() {
 						},
 						"properties": {
 							"individualId": {
-							"type": "string",
-							"pattern": "\\S"
+							"type": "string"
 							},
 							"passportId": {
 							"type": "string"
 							},
-							"expireDate": {
+                            "fullName": {
 							"type": "string"
 							},
 							"consent": {
@@ -200,6 +204,7 @@ func main() {
 						},
 						"required": [
 							"individualId",
+                            "fullName",
 							"homeCountry",
 							"passportId",
 							"email",
@@ -208,6 +213,238 @@ func main() {
 						],
 						"additionalProperties": true
 						}`)
+	})
+
+	http.HandleFunc("/signup-identity-verifier-details.json", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `[
+                            {
+                                "id": "mock-identity-verifier",
+                                "displayName": {
+                                "eng": "Veridonia National Identity & Passport Verifier",
+                                "fra": "Vérificateur d'identité fictif",
+                                "ara": "التحقق من الهوية الوهمية",
+                                "khm": "Mock អត្តសញ្ញាណប័ណ្ណ Verifier"
+                                },
+                                "logoUrl": "https://avatars.githubusercontent.com/u/39733477?s=200&v=4",
+                                "processType": "VIDEO",
+                                "active": true,
+                                "retryOnFailure": true
+                            },
+                            {
+                                "id": "test-identity-verifier",
+                                "displayName": {
+                                "eng": "Veridonia Income Tax ID Verifier",
+                                "fra": "Vérificateur d'identité fictif2",
+                                "ara": "التحقق من الهوية الوهمية",
+                                "khm": "Mock អត្តសញ្ញាណប័ណ្ណ Verifier2"
+                                },
+                                "logoUrl": "https://avatars.githubusercontent.com/u/39733477?s=200&v=4",
+                                "processType": "VIDEO",
+                                "active": true,
+                                "retryOnFailure": true
+                            }
+                            ]`)
+	})
+
+	http.HandleFunc("/signup-idv_mock-identity-verifier.json", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{
+                    "terms&Conditions": {
+                        "eng": "I understand that the data collected about me during registration by the said authority includes different parameters."
+                    },
+                    "previewInfo": {
+                        "step_1": {
+                        "eng": "Verify the functionality of your camera using the video preview on the right"
+                        },
+                        "step_2": {
+                        "eng": "Ensure you are positioned in a well-lit area to facilitate clear video capture"
+                        },
+                        "step_3": {
+                        "eng": "Position your face within the oval frame, ensuring your face is clearly visible"
+                        },
+                        "step_4": {
+                        "eng": "Remove any accessories or items that could obstruct your face, such as hats or sunglasses."
+                        },
+                        "step_5": {
+                        "eng": "Maintain a stable posture throughout the video recording to prevent blurring"
+                        },
+                        "step_6": {
+                        "eng": "Be prepared to follow instructions provided on screen during the eKYC process, such as blinking or turning your head as directed."
+                        },
+                        "step_7": {
+                        "eng": "Have your ID readily accessible for the verification purposes."
+                        }
+                    },
+                    "stepCodes": {
+                        "liveness_check": {
+                        "eng": "Liveness check"
+                        },
+                        "id_verification": {
+                        "eng": "ID card verification"
+                        }
+                    },
+                    "errors": {
+                        "low_light": {
+                        "eng": "Low light, consider facing the sun or switching on the lights"
+                        },
+                        "id_card_too_far": {
+                        "eng": "Unable to read card as its too far"
+                        },
+                        "invalid_frame": {
+                        "eng": "The provided frames are not valid. Please check the input and try again."
+                        },
+                        "invalid_order": {
+                        "eng": "The order provided is invalid. Please ensure the correct sequence and try again."
+                        },
+                        "invalid_step_code": {
+                        "eng": "The step code is incorrect. Please verify the step and provide a valid code."
+                        }
+                    },
+                    "messages": {
+                        "turn_left": {
+                        "eng": "Turn your head to Left"
+                        },
+                        "turn_right": {
+                        "eng": "Turn your head to Right"
+                        },
+                        "sit_straight": {
+                        "eng": "Keep good posture while facing the camera"
+                        },
+                        "success_check": {
+                        "eng": "Liveness check successful"
+                        },
+                        "id_verified": {
+                        "eng": "ID card verification successful"
+                        },
+                        "facingcamera": {
+                        "eng": "Keep good posture while facing the camera,do follow all the instructions as informed"
+                        },
+                        "facingscreen": {
+                        "eng": "please follow instruction to perform eKYC process successfully, keep your internet connected throughout the process"
+                        },
+                        "camera_on": {
+                        "eng": "please follow instruction to perform eKYC process successfully, keep your internet connected throughout the process"
+                        }
+                    }
+                    }`)
+	})
+
+	http.HandleFunc("/signup-idv_test-identity-verifier.json", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{
+                    "terms&Conditions": {
+                        "eng": "I understand that the data collected about me during registration by the said authority includes different parameters."
+                    },
+                    "previewInfo": {
+                        "step_1": {
+                        "eng": "Verify the functionality of your camera using the video preview on the right"
+                        },
+                        "step_2": {
+                        "eng": "Ensure you are positioned in a well-lit area to facilitate clear video capture"
+                        },
+                        "step_3": {
+                        "eng": "Position your face within the oval frame, ensuring your face is clearly visible"
+                        },
+                        "step_4": {
+                        "eng": "Remove any accessories or items that could obstruct your face, such as hats or sunglasses."
+                        },
+                        "step_5": {
+                        "eng": "Maintain a stable posture throughout the video recording to prevent blurring"
+                        },
+                        "step_6": {
+                        "eng": "Be prepared to follow instructions provided on screen during the eKYC process, such as blinking or turning your head as directed."
+                        },
+                        "step_7": {
+                        "eng": "Have your ID readily accessible for the verification purposes."
+                        }
+                    },
+                    "stepCodes": {
+                        "liveness_check": {
+                        "eng": "Liveness check"
+                        },
+                        "id_verification": {
+                        "eng": "ID card verification"
+                        }
+                    },
+                    "errors": {
+                        "low_light": {
+                        "eng": "Low light, consider facing the sun or switching on the lights"
+                        },
+                        "id_card_too_far": {
+                        "eng": "Unable to read card as its too far"
+                        },
+                        "invalid_frame": {
+                        "eng": "The provided frames are not valid. Please check the input and try again."
+                        },
+                        "invalid_order": {
+                        "eng": "The order provided is invalid. Please ensure the correct sequence and try again."
+                        },
+                        "invalid_step_code": {
+                        "eng": "The step code is incorrect. Please verify the step and provide a valid code."
+                        }
+                    },
+                    "messages": {
+                        "turn_left": {
+                        "eng": "Turn your head to Left"
+                        },
+                        "turn_right": {
+                        "eng": "Turn your head to Right"
+                        },
+                        "sit_straight": {
+                        "eng": "Keep good posture while facing the camera"
+                        },
+                        "success_check": {
+                        "eng": "Liveness check successful"
+                        },
+                        "id_verified": {
+                        "eng": "ID card verification successful"
+                        },
+                        "facingcamera": {
+                        "eng": "Keep good posture while facing the camera,do follow all the instructions as informed"
+                        },
+                        "facingscreen": {
+                        "eng": "please follow instruction to perform eKYC process successfully, keep your internet connected throughout the process"
+                        },
+                        "camera_on": {
+                        "eng": "please follow instruction to perform eKYC process successfully, keep your internet connected throughout the process"
+                        }
+                    }
+                    }`)
+	})
+
+	http.HandleFunc("/identity_verifier_story.json", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"scenes":[
+                                {"frameNumber" : 0, "stepCode" : "START", "step" : { "code" : "liveness_check", "framesPerSecond" : 1, "durationInSeconds" : 100, "startupDelayInSeconds" : 2, "retryOnTimeout" : false, "retryableErrorCodes" : [] }, "feedback" : null },
+                                {"frameNumber" : 1, "stepCode" : "liveness_check", "step" : null, "feedback" : {"type" : "MESSAGE", "code" : "turn_left" } },
+                                {"frameNumber" : 2, "stepCode" : "liveness_check", "step" : null, "feedback" : {"type" : "MESSAGE", "code" : "turn_right" } },
+                                {"frameNumber" : 5, "stepCode" : "liveness_check", "step" : { "code" : "END", "framesPerSecond" : 0, "durationInSeconds" : 0, "startupDelayInSeconds" : 0, "retryOnTimeout" : false, "retryableErrorCodes" : [] }, "feedback" : null }
+                            ],
+                            "verificationResult": {
+                                "status": "COMPLETED",
+                                "verifiedClaims" : { "fullName" : { "trust_framework":"eidas", "verification_process":"Video eKYC", "assurance_level": "Gold" },
+                                "passportId" : { "trust_framework":"AICTE", "verification_process":"Video eKYC", "assurance_level": "Gold" }},
+                                "errorCode": null
+                            }
+                            }`)
+	})
+
+	http.HandleFunc("/test_verifier_story.json", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"scenes":[
+                                {"frameNumber" : 0, "stepCode" : "START", "step" : { "code" : "liveness_check", "framesPerSecond" : 1, "durationInSeconds" : 100, "startupDelayInSeconds" : 2, "retryOnTimeout" : false, "retryableErrorCodes" : [] }, "feedback" : null },
+                                {"frameNumber" : 1, "stepCode" : "liveness_check", "step" : null, "feedback" : {"type" : "MESSAGE", "code" : "turn_right" } },
+                                {"frameNumber" : 2, "stepCode" : "liveness_check", "step" : null, "feedback" : {"type" : "MESSAGE", "code" : "turn_right" } },
+                                {"frameNumber" : 5, "stepCode" : "liveness_check", "step" : { "code" : "END", "framesPerSecond" : 0, "durationInSeconds" : 0, "startupDelayInSeconds" : 0, "retryOnTimeout" : false, "retryableErrorCodes" : [] }, "feedback" : null }
+                            ],
+                            "verificationResult": {
+                                "status": "COMPLETED",
+                                "verifiedClaims" : { "fullName" : { "trust_framework":"eidas", "verification_process":"Video eKYC", "assurance_level": "Gold" },
+                                "passportId" : { "trust_framework":"AICTE", "verification_process":"Video eKYC", "assurance_level": "Gold" }},
+                                "errorCode": null
+                            }
+                            }`)
 	})
 
 	fmt.Println("Server starting on port 8080...")

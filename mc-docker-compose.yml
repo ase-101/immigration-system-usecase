@@ -53,6 +53,7 @@ services:
       - MOSIP_MOCK_IDA_KYC_TRANSACTION_TIMEOUT_SECS=900
       - MOSIP_ESIGNET_HOST=localhost:8088
       - MOSIP_MOCK_IDA_IDENTITY_SCHEMA_URL=http://local-platform-service:8080/masterdata/identity-schema
+      - MOSIP_MOCK_IDA_IDENTITY_OPENID_CLAIMS_MAPPING={"fullName":"name","email":"email","encodedPhoto":"picture","homeCountry":"address.country"}
     depends_on:
       - database
 
@@ -101,8 +102,8 @@ services:
         - container_user=mosip
         - active_profile_env=default,local
         - plugin_name_env=esignet-mock-plugin.jar
-        - MOSIP_SIGNUP_DOMAIN_URL=http://signup:8089
-        - MOSIP_ESIGNET_DOMAIN_URL=http://localhost:3000
+        - MOSIP_SIGNUP_DOMAIN_URL=http://localhost:4000
+        - MOSIP_ESIGNET_DOMAIN_URL=http://esignet:8088
         - MOSIP_ESIGNET_MOCK_DOMAIN_URL=http://immigration-system:8082
         - KEYCLOAK_EXTERNAL_URL=http://local-platform-service:8080
         - SPRING_CACHE_TYPE=redis
@@ -120,22 +121,30 @@ services:
         - MOSIP_SIGNUP_IDENTIFIER_MIN_LENGTH=8
         - MOSIP_SIGNUP_IDENTIFIER_MAX_LENGTH=20
         - MOSIP_SIGNUP_IDENTIFIER_NAME=email
-        - MOSIP_SIGNUP_MOCK_MANDATORY_ATTRIBUTES_CREATE=email,passportId,expireDate,consent
+        - MOSIP_SIGNUP_MOCK_MANDATORY_ATTRIBUTES_CREATE=email,passportId,fullName,consent
         - MOSIP_SIGNUP_MOCK_MANDATORY_ATTRIBUTES_UPDATE=
         - MOSIP_SIGNUP_MOCK_USERNAME_FIELD=email
+        - MOSIP_SIGNUP_CONFIG_SERVER_URL=http://local-platform-service:8080/
+        - MOSIP_SIGNUP_MOCK_CONFIG_SERVER_URL=http://local-platform-service:8080/
+        - MOSIP_SIGNUP_MOCK_IDENTITY_VERIFICATION_STORY_NAME=identity_verifier_story.json
+        - MOSIP_SIGNUP_TEST_IDENTITY_VERIFICATION_STORY_NAME=test_verifier_story.json
+        - MOSIP_SIGNUP_RP_UI_CONFIG={'client_id':'$${mosip.signup.oauth.client-id}','redirect_uri_verification':'http://localhost:4000/identity-verification','redirect_uri_signin':'http://localhost:3000/login','redirect_uri_consent':'http://localhost:3000/consent','authorization_endpoint':'http://localhost:3000/authorize','response_type':'code','scope':'openid','claims':'','acr_values':'$${mosip.signup.rp.acr_values}','expiry_time':$${mosip.signup.rp.expiry_time},'redirect_delay':$${mosip.signup.rp.redirect_delay}}
       depends_on:
         - redis-server
       volumes:
-        - ./oidckeystore.p12:/home/mosip/keys/oidckeystore.p12
+        - ./oidckeystore.p12:/home/mosip/oidckeystore.p12
 
   signup-ui:
-    image: 'mosipdev/signup-ui:ES-2797'
+    image: 'zesu22/signup-ui:ES-2797'
+    platform: linux/amd64  # Add this line
     user: root
     ports:
       - 4000:3000
     environment:
       - container_user=mosip
       - REACT_APP_API_BASE_URL=http://signup:8089/v1/signup
+      - DEFAULT_LANG=en
+      - NODE_ENV=development
     volumes:
       - ./signup-nginx.conf:/etc/nginx/nginx.conf
     depends_on:
@@ -155,23 +164,35 @@ services:
       - USERINFO_RESPONSE_TYPE=jwt
 
   omera-bank-ui:
-    image: 'mosipdev/mock-relying-party-ui:develop'
+    image: 'zesu22/omera-bank-ui:ES-2801'
+    platform: linux/amd64  # Add this line
     user: root
     ports:
       - 5001:3000
     environment:
       - container_user=mosip
-      - ESIGNET_UI_BASE_URL=http://localhost:3000
       - MOCK_RELYING_PARTY_SERVER_URL=http://localhost:5001/mock-relying-party-service
+      - ESIGNET_UI_BASE_URL=http://localhost:3000
       - REDIRECT_URI=http://localhost:5001/userprofile
       - REDIRECT_URI_REGISTRATION=http://localhost:5001/registration
       - CLIENT_ID=IIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7ADUw
       - ACRS=mosip:idp:acr:generated-code%20mosip:idp:acr:biometrics
-      - SIGN_IN_BUTTON_PLUGIN_URL=http://localhost:3000/plugins/sign-in-button-plugin.js
+      - SIGN_IN_BUTTON_PLUGIN_URL=https://esignet.esdev.mosip.net/plugins/sign-in-button-plugin.js
       - CLAIMS_LOCALES=en
+      - DEFAULT_LANG=en
       - SCOPE_USER_PROFILE=openid profile
       - CLAIMS_USER_PROFILE=%7B%22userinfo%22%3A%7B%22name%22%3A%7B%22essential%22%3Afalse%7D%2C%22phone_number%22%3A%7B%22essential%22%3Atrue%7D%20%7D%2C%22id_token%22%3A%7B%7D%7D
       - CLAIMS_REGISTRATION=%7B%22userinfo%22%3A%7B%22name%22%3A%7B%22essential%22%3Afalse%7D%2C%22phone_number%22%3A%7B%22essential%22%3Atrue%7D%20%7D%2C%22id_token%22%3A%7B%7D%7D
+      - ENABLE_FOREIGNER_SIGNIN=true
+      - ESIGNET_UI_BASE_URL_FOREIGNER=http://localhost:3000
+      - REDIRECT_URI_FOREIGNER=http://localhost:5001/userprofile
+      - REDIRECT_URI_REGISTRATION_FOREIGNER=http://localhost:5001/registration
+      - CLIENT_ID_FOREIGNER=IIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7ADUw
+      - ACRS_FOREIGNER=mosip:idp:acr:generated-code%20mosip:idp:acr:biometrics
+      - CLAIMS_LOCALES_FOREIGNER=en
+      - SCOPE_USER_PROFILE_FOREIGNER=openid profile
+      - CLAIMS_USER_PROFILE_FOREIGNER=%7B%0A%20%20%22userinfo%22%3A%20%7B%0A%20%20%20%20%22verified_claims%22%3A%20%7B%0A%20%20%20%20%20%20%22verification%22%3A%20%7B%0A%20%20%20%20%20%20%20%20%22trust_framework%22%3A%20%7B%22value%22%20%3A%20%22eidas%22%7D%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%22claims%22%3A%20%7B%0A%20%20%20%20%20%20%20%20%22name%22%3A%20%7B%20%22essential%22%20%3A%20true%7D%2C%0A%20%20%20%20%20%20%20%20%22country%22%3A%20%7B%20%22essential%22%20%3A%20true%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D
+      - CLAIMS_REGISTRATION_FOREIGNER=%7B%22userinfo%22%3A%7B%22name%22%3A%7B%22essential%22%3Afalse%7D%2C%22phone_number%22%3A%7B%22essential%22%3Atrue%7D%20%7D%2C%22id_token%22%3A%7B%7D%7D
     volumes:
       - ./omera-nginx.conf:/etc/nginx/nginx.conf
     depends_on:
