@@ -12,6 +12,7 @@
   },
   "landing_page": {
     "sign_in_with_esignet": "Sign In with National ID",
+    "sign_in_as_foreigner": "Sign In as Foreigner",
     "sign_in_to_banking_portal": "Log In",
     "username": "Username",
     "password": "Password",
@@ -145,7 +146,11 @@
   "modal": {
     "close": "Close",
     "congrats": "Congratulations!",
-    "verification_success": "Your identity has been successfully verified and you are eligible to open an account!"
+    "note": "Note",
+    "proceed": "Proceed",
+    "verification_success": "Your identity has been successfully verified and you are eligible to open an account!",
+    "verified_message": "Congratulations! Based on your verified identity, you qualify for a monthly transaction limit of {{limit}}. This enhanced limit enables you to access premium banking features and enjoy greater financial flexibility.",
+    "unverified_message": "You can proceed with a basic account with a monthly transaction limit of {{limit}}. To unlock higher limits and premium features, we recommend verifying your identity."
   },
   "vc_card": {
     "proceed": "Proceed",
