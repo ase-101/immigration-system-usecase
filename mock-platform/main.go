@@ -221,7 +221,7 @@ func main() {
                             {
                                 "id": "mock-identity-verifier",
                                 "displayName": {
-                                "eng": "Veridonia National Identity & Passport Verifier",
+                                "eng": "Westalis NID Verifier",
                                 "fra": "Vérificateur d'identité fictif",
                                 "ara": "التحقق من الهوية الوهمية",
                                 "khm": "Mock អត្តសញ្ញាណប័ណ្ណ Verifier"
@@ -234,7 +234,7 @@ func main() {
                             {
                                 "id": "test-identity-verifier",
                                 "displayName": {
-                                "eng": "Veridonia Income Tax ID Verifier",
+                                "eng": "Westalis Tax ID Verifier",
                                 "fra": "Vérificateur d'identité fictif2",
                                 "ara": "التحقق من الهوية الوهمية",
                                 "khm": "Mock អត្តសញ្ញាណប័ណ្ណ Verifier2"
@@ -251,7 +251,7 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintf(w, `{
                     "terms&Conditions": {
-                        "eng": "I understand that the data collected about me during registration by the said authority includes different parameters."
+                        "eng": "I understand that the data collected about me during registration by the Bureau of Immigration, Veridonia includes different parameters."
                     },
                     "previewInfo": {
                         "step_1": {
@@ -278,7 +278,7 @@ func main() {
                     },
                     "stepCodes": {
                         "liveness_check": {
-                        "eng": "Liveness check"
+                        "eng": "Starting Liveness check"
                         },
                         "id_verification": {
                         "eng": "ID card verification"
@@ -314,8 +314,11 @@ func main() {
                         "success_check": {
                         "eng": "Liveness check successful"
                         },
+                        "display_idcard": {
+                        "eng": "Display your National ID card to the camera"
+                        },
                         "id_verified": {
-                        "eng": "ID card verification successful"
+                        "eng": "Your National ID card verification successful"
                         },
                         "facingcamera": {
                         "eng": "Keep good posture while facing the camera,do follow all the instructions as informed"
@@ -334,7 +337,7 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintf(w, `{
                     "terms&Conditions": {
-                        "eng": "I understand that the data collected about me during registration by the said authority includes different parameters."
+                        "eng": "I understand that the data collected about me during registration by the Bureau of Immigration, Veridonia includes different parameters."
                     },
                     "previewInfo": {
                         "step_1": {
@@ -361,7 +364,7 @@ func main() {
                     },
                     "stepCodes": {
                         "liveness_check": {
-                        "eng": "Liveness check"
+                        "eng": "Starting Liveness check"
                         },
                         "id_verification": {
                         "eng": "ID card verification"
@@ -398,16 +401,19 @@ func main() {
                         "eng": "Liveness check successful"
                         },
                         "id_verified": {
-                        "eng": "ID card verification successful"
+                        "eng": "Your Tax ID card verification successful"
                         },
                         "facingcamera": {
                         "eng": "Keep good posture while facing the camera,do follow all the instructions as informed"
                         },
                         "facingscreen": {
-                        "eng": "please follow instruction to perform eKYC process successfully, keep your internet connected throughout the process"
+                        "eng": "please follow instruction to perform verification process successfully, keep your internet connected throughout the process"
                         },
                         "camera_on": {
                         "eng": "please follow instruction to perform eKYC process successfully, keep your internet connected throughout the process"
+                        },
+                        "display_idcard": {
+                        "eng": "Display your Westalis Tax ID card to the camera"
                         }
                     }
                     }`)
@@ -419,12 +425,15 @@ func main() {
                                 {"frameNumber" : 0, "stepCode" : "START", "step" : { "code" : "liveness_check", "framesPerSecond" : 1, "durationInSeconds" : 100, "startupDelayInSeconds" : 2, "retryOnTimeout" : false, "retryableErrorCodes" : [] }, "feedback" : null },
                                 {"frameNumber" : 1, "stepCode" : "liveness_check", "step" : null, "feedback" : {"type" : "MESSAGE", "code" : "turn_left" } },
                                 {"frameNumber" : 2, "stepCode" : "liveness_check", "step" : null, "feedback" : {"type" : "MESSAGE", "code" : "turn_right" } },
-                                {"frameNumber" : 5, "stepCode" : "liveness_check", "step" : { "code" : "END", "framesPerSecond" : 0, "durationInSeconds" : 0, "startupDelayInSeconds" : 0, "retryOnTimeout" : false, "retryableErrorCodes" : [] }, "feedback" : null }
+                                {"frameNumber" : 3, "stepCode" : "liveness_check", "step" : null, "feedback" : {"type" : "MESSAGE", "code" : "success_check" } },
+                                {"frameNumber" : 4, "stepCode" : "liveness_check", "step" : null, "feedback" : {"type" : "MESSAGE", "code" : "display_idcard" } },
+                                {"frameNumber" : 5, "stepCode" : "liveness_check", "step" : null, "feedback" : {"type" : "MESSAGE", "code" : "id_verified" } },
+                                {"frameNumber" : 6, "stepCode" : "liveness_check", "step" : { "code" : "END", "framesPerSecond" : 0, "durationInSeconds" : 0, "startupDelayInSeconds" : 0, "retryOnTimeout" : false, "retryableErrorCodes" : [] }, "feedback" : null }
                             ],
                             "verificationResult": {
                                 "status": "COMPLETED",
-                                "verifiedClaims" : { "fullName" : { "trust_framework":"eidas", "verification_process":"Video eKYC", "assurance_level": "Gold" },
-                                "passportId" : { "trust_framework":"AICTE", "verification_process":"Video eKYC", "assurance_level": "Gold" }},
+                                "verifiedClaims" : { "email" : { "trust_framework":"NID", "verification_process":"online_video", "assurance_level": "Gold" },
+                                "homeCountry" : { "trust_framework":"NID", "verification_process":"online_video", "assurance_level": "Gold" }},
                                 "errorCode": null
                             }
                             }`)
@@ -434,14 +443,17 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintf(w, `{"scenes":[
                                 {"frameNumber" : 0, "stepCode" : "START", "step" : { "code" : "liveness_check", "framesPerSecond" : 1, "durationInSeconds" : 100, "startupDelayInSeconds" : 2, "retryOnTimeout" : false, "retryableErrorCodes" : [] }, "feedback" : null },
-                                {"frameNumber" : 1, "stepCode" : "liveness_check", "step" : null, "feedback" : {"type" : "MESSAGE", "code" : "turn_right" } },
-                                {"frameNumber" : 2, "stepCode" : "liveness_check", "step" : null, "feedback" : {"type" : "MESSAGE", "code" : "turn_right" } },
-                                {"frameNumber" : 5, "stepCode" : "liveness_check", "step" : { "code" : "END", "framesPerSecond" : 0, "durationInSeconds" : 0, "startupDelayInSeconds" : 0, "retryOnTimeout" : false, "retryableErrorCodes" : [] }, "feedback" : null }
+                                {"frameNumber" : 1, "stepCode" : "liveness_check", "step" : null, "feedback" : {"type" : "MESSAGE", "code" : "facingscreen" } },
+                                {"frameNumber" : 2, "stepCode" : "liveness_check", "step" : null, "feedback" : {"type" : "MESSAGE", "code" : "turn_left" } },
+                                {"frameNumber" : 3, "stepCode" : "liveness_check", "step" : null, "feedback" : {"type" : "MESSAGE", "code" : "success_check" } },
+                                {"frameNumber" : 4, "stepCode" : "liveness_check", "step" : null, "feedback" : {"type" : "MESSAGE", "code" : "display_idcard" } },
+                                {"frameNumber" : 5, "stepCode" : "liveness_check", "step" : null, "feedback" : {"type" : "MESSAGE", "code" : "id_verified" } },
+                                {"frameNumber" : 6, "stepCode" : "liveness_check", "step" : { "code" : "END", "framesPerSecond" : 0, "durationInSeconds" : 0, "startupDelayInSeconds" : 0, "retryOnTimeout" : false, "retryableErrorCodes" : [] }, "feedback" : null }
                             ],
                             "verificationResult": {
                                 "status": "COMPLETED",
-                                "verifiedClaims" : { "fullName" : { "trust_framework":"eidas", "verification_process":"Video eKYC", "assurance_level": "Gold" },
-                                "passportId" : { "trust_framework":"AICTE", "verification_process":"Video eKYC", "assurance_level": "Gold" }},
+                                "verifiedClaims" : { "fullName" : { "trust_framework":"eidas", "verification_process":"online_video", "assurance_level": "Gold" },
+                                "passportId" : { "trust_framework":"eidas", "verification_process":"online_video", "assurance_level": "Gold" }},
                                 "errorCode": null
                             }
                             }`)

@@ -86,9 +86,9 @@ const LandingPage = () => {
     });
 
     // Initialize Foreigner button with separate configuration (if enabled)
-    if (isForeignerSignInEnabled) {
+    //if (isForeignerSignInEnabled) {
       window.SignInWithEsignetButton?.init({
-        oidcConfig: oidcConfigForeigner,
+        oidcConfig: oidcConfig,
         buttonConfig: {
           shape: "soft_edges",
           labelText: t("sign_in_as_foreigner"),
@@ -96,7 +96,7 @@ const LandingPage = () => {
         },
         signInElement: document.getElementById("sign-in-as-foreigner"),
       });
-    }
+    //}
   };
 
   localStorage.removeItem("userInfo");
@@ -195,9 +195,7 @@ const LandingPage = () => {
                   {state === "ready" && (
                     <>
                       <div id="sign-in-with-esignet" className="w-full mb-3"></div>
-                      {isForeignerSignInEnabled && (
-                        <div id="sign-in-as-foreigner" className="w-full"></div>
-                      )}
+                      <div id="sign-in-as-foreigner" className="w-full"></div>
                     </>
                   )}
                 </div>

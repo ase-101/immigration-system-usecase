@@ -52,13 +52,15 @@ services:
       - SPRING_DATASOURCE_PASSWORD=postgres
       - MOSIP_MOCK_IDA_KYC_TRANSACTION_TIMEOUT_SECS=900
       - MOSIP_ESIGNET_HOST=localhost:8088
+      - MOSIP_MOCK_IDA_KYC_PSUT_FIELD=email
       - MOSIP_MOCK_IDA_IDENTITY_SCHEMA_URL=http://local-platform-service:8080/masterdata/identity-schema
       - MOSIP_MOCK_IDA_IDENTITY_OPENID_CLAIMS_MAPPING={"fullName":"name","email":"email","encodedPhoto":"picture","homeCountry":"address.country"}
     depends_on:
       - database
 
   esignet:
-    image: 'mosipdev/esignet-with-plugins:develop'
+    #image: 'mosipdev/esignet-with-plugins:develop'
+    image: 'mosipid/esignet-with-plugins:1.7.1'
     user: root
     ports: 
       - 8088:8088
@@ -71,17 +73,19 @@ services:
       - MOSIP_ESIGNET_DATABASE_PASSWORD=postgres
       - MOSIP_ESIGNET_MOCK_DOMAIN_URL=http://immigration-system:8082
       - MOSIP_ESIGNET_INTEGRATION_KEY_BINDER=MockKeyBindingWrapperService
-      - SPRING_DATA_REDIS_HOST=redis-server
+      - SPRING_REDIS_HOST=redis-server
       - KAFKA_ENABLED=false
       - SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
       - MOSIP_SIGNUP_DOMAIN_URL=http://localhost:4000
       - MOSIP_ESIGNET_DOMAIN_URL=http://esignet:8088
+      - MOSIP_ESIGNET_UI_CONFIG_LOGIN_ID_OPTIONS={{'id':'email','svg':'email_icon','prefixes':'','postfix':'','maxLength':'','regex':''}}
     depends_on:
       - database
       - redis-server
 
   esignet-ui:
-    image: 'mosipdev/oidc-ui:develop'
+    #image: 'mosipdev/oidc-ui:develop'
+    image: 'mosipid/oidc-ui:1.7.1'
     user: root
     ports:
       - 3000:3000
@@ -124,6 +128,7 @@ services:
         - MOSIP_SIGNUP_MOCK_MANDATORY_ATTRIBUTES_CREATE=email,passportId,fullName,consent
         - MOSIP_SIGNUP_MOCK_MANDATORY_ATTRIBUTES_UPDATE=
         - MOSIP_SIGNUP_MOCK_USERNAME_FIELD=email
+        - MOSIP_SIGNUP_RP_ACR_VALUES=mosip:idp:acr:generated-code
         - MOSIP_SIGNUP_CONFIG_SERVER_URL=http://local-platform-service:8080/
         - MOSIP_SIGNUP_MOCK_CONFIG_SERVER_URL=http://local-platform-service:8080/
         - MOSIP_SIGNUP_MOCK_IDENTITY_VERIFICATION_STORY_NAME=identity_verifier_story.json
@@ -135,7 +140,8 @@ services:
         - ./oidckeystore.p12:/home/mosip/oidckeystore.p12
 
   signup-ui:
-    image: 'zesu22/signup-ui:ES-2797'
+    #image: 'zesu22/signup-ui:ES-2797'
+    image: 'mosipdev/signup-ui:ES-2797'
     platform: linux/amd64  # Add this line
     user: root
     ports:
@@ -145,6 +151,7 @@ services:
       - REACT_APP_API_BASE_URL=http://signup:8089/v1/signup
       - DEFAULT_LANG=en
       - NODE_ENV=development
+      - SECURE_WEBSOCKET=false
     volumes:
       - ./signup-nginx.conf:/etc/nginx/nginx.conf
     depends_on:
@@ -164,8 +171,7 @@ services:
       - USERINFO_RESPONSE_TYPE=jwt
 
   omera-bank-ui:
-    image: 'zesu22/omera-bank-ui:ES-2801'
-    platform: linux/amd64  # Add this line
+    image: 'anushas/omera-bank-ui:local'
     user: root
     ports:
       - 5001:3000
@@ -180,8 +186,8 @@ services:
       - SIGN_IN_BUTTON_PLUGIN_URL=https://esignet.esdev.mosip.net/plugins/sign-in-button-plugin.js
       - CLAIMS_LOCALES=en
       - DEFAULT_LANG=en
-      - SCOPE_USER_PROFILE=openid profile
-      - CLAIMS_USER_PROFILE=%7B%22userinfo%22%3A%7B%22name%22%3A%7B%22essential%22%3Afalse%7D%2C%22phone_number%22%3A%7B%22essential%22%3Atrue%7D%20%7D%2C%22id_token%22%3A%7B%7D%7D
+      - SCOPE_USER_PROFILE=openid email
+      - CLAIMS_USER_PROFILE=%7B%0A%20%20%22userinfo%22%3A%20%7B%0A%20%20%20%20%22verified_claims%22%3A%20%7B%0A%20%20%20%20%20%20%22verification%22%3A%20%7B%0A%20%20%20%20%20%20%20%20%22trust_framework%22%3A%20%7B%22value%22%20%3A%20%22eidas%22%7D%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%22claims%22%3A%20%7B%0A%20%20%20%20%20%20%20%20%22name%22%3A%20%7B%20%22essential%22%20%3A%20true%7D%2C%0A%20%20%20%20%20%20%20%20%22country%22%3A%20%7B%20%22essential%22%20%3A%20true%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D
       - CLAIMS_REGISTRATION=%7B%22userinfo%22%3A%7B%22name%22%3A%7B%22essential%22%3Afalse%7D%2C%22phone_number%22%3A%7B%22essential%22%3Atrue%7D%20%7D%2C%22id_token%22%3A%7B%7D%7D
       - ENABLE_FOREIGNER_SIGNIN=true
       - ESIGNET_UI_BASE_URL_FOREIGNER=http://localhost:3000
@@ -190,10 +196,47 @@ services:
       - CLIENT_ID_FOREIGNER=IIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7ADUw
       - ACRS_FOREIGNER=mosip:idp:acr:generated-code%20mosip:idp:acr:biometrics
       - CLAIMS_LOCALES_FOREIGNER=en
-      - SCOPE_USER_PROFILE_FOREIGNER=openid profile
+      - SCOPE_USER_PROFILE_FOREIGNER=openid email
       - CLAIMS_USER_PROFILE_FOREIGNER=%7B%0A%20%20%22userinfo%22%3A%20%7B%0A%20%20%20%20%22verified_claims%22%3A%20%7B%0A%20%20%20%20%20%20%22verification%22%3A%20%7B%0A%20%20%20%20%20%20%20%20%22trust_framework%22%3A%20%7B%22value%22%20%3A%20%22eidas%22%7D%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%22claims%22%3A%20%7B%0A%20%20%20%20%20%20%20%20%22name%22%3A%20%7B%20%22essential%22%20%3A%20true%7D%2C%0A%20%20%20%20%20%20%20%20%22country%22%3A%20%7B%20%22essential%22%20%3A%20true%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D
       - CLAIMS_REGISTRATION_FOREIGNER=%7B%22userinfo%22%3A%7B%22name%22%3A%7B%22essential%22%3Afalse%7D%2C%22phone_number%22%3A%7B%22essential%22%3Atrue%7D%20%7D%2C%22id_token%22%3A%7B%7D%7D
     volumes:
       - ./omera-nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - omera-bank-service
+
+  health-portal-service:
+    image: 'mosipdev/mock-relying-party-service:develop'
+    user: root
+    ports:
+      - 8889:8888
+    environment:
+      - container_user=mosip
+      - ESIGNET_SERVICE_URL=http://esignet:8088/v1/esignet
+      - ESIGNET_AUD_URL=http://esignet:8088/v1/esignet/oauth/v2/token
+      - CLIENT_PRIVATE_KEY=ewogICAgInAiOiAiME0tZ2FabHhLMzJ1RXdtN21JMVl6UlN6dmJJVGozUXh3TG05SEZKenAtbG9YcEpPc3NkY2prUTduSFRPenZJMHNYQlBoWkpYUjhlZXlRV3NfM2VHMFA4RVdTS0lSMXhHYUxkeHBrNVNzdld1UFY5SFJyWHlscHNXTDlqNDZJOENUZnBlMXNkVXJWaU5WRTFGODlDSjduWkYxYjBlR0pZb09hT3lLVWh1Vm9zIiwKICAgICJrdHkiOiAiUlNBIiwKICAgICJxIjogIjd3YXNoQ3hGSTJRTnFNazFLNzNpTjFZTkdON1FMRTlaTnFhSEtjVkUtUFZkZWJyc0RKQ1JZVVZLbnNCOFVSNVdLZTdtU094OHhoNHlNYXA1RXBMX3VESUI0OHhEcmFob2NCaDdPNVp5dkJkSFhHTXl5bGpvMm80eWs3dXhSZDRvZkVBTG55bTdCdHo0c2NlMWEyQTRDN0NUekNMUk1NWDg5NjVNaHNCdXFpVSIsCiAgICAiZCI6ICJyOFYwUF9qcXNLaktpZU1EN0xJb1dTQ2JnUzhYTVVac09IcWxzSThGc21WYm9EZXJKM0lPRmlvWU01M1JFV1NvaG5fNWZyM1UyOUZXbnN4VkNOUi1oWjFLVl84MTFNTUwzUEdnaU1Hb01TdmVJUWo5U2xjRVU5Ym9wbWpobEdTNFpOaVZkdGlld2VFNllhX3N5Vk81TzNpVlFEd1llcFBlY2pSRUEycGZiSmgwa3haRkVua1B1M01tS3F2ZVJCYWdNNWN3d2dYeUtFaHlZVDR0dEllcFoxVm5oYXpjQ1BIbmZSZUNjeFl5U2x1SmFuWXRFTmNFbkswVWIxeWhWVUVGV3ZqU0RTdzBjUVMxMEltdGc3Yl9UWkFVVzBscVNVRTZaZy0zM0VnbXZWTE9raVVpUjJWdTdJWDhDTXFFc3BqbHgtSHpnNG5ESWdZUjd1OGVrekNSIiwKICAgICJlIjogIkFRQUIiLAogICAgInVzZSI6ICJzaWciLAogICAgInFpIjogIlJjYWpZNGZTTTlSa3BGZElPSGpSVTBFTWE1WUxwSlhCOHdIemRBZFBDcndFRTZ5Q1pvZ0lZWEFhTHFfOTBvM21UdDh4ZVJkSEktVXVMNDFJMF92SFcxLUltWXd2LUVEd2Z4V2tkTEtFbmkyeHMwNmN1QVBFOGZYSzhMM3hrT2lNa1o0alFuMVVIbk9FRldKdVd4bmhpVFU4SGhnQUJZSDB1N2N2Zjl1VnFFMCIsCiAgICAiZHAiOiAibmkwNS1lUjNleGVJZnZsM2R6ZFRsbjdoTFlpeEVwRlZnd1h3Z0h6aENjaGdfSXJlUE1XU2tsNlR2WkFxZlUteXBOdE1FZ1hxUWdDd2d0emUwT0xOYUpKVnktUEIwalRQVFZIeE1LYlNOS2l4SmVLQURzdVRpWXpQd00wZXVLUmtmWWQwd2tSYkc3a2h6a05fQXhQcy1JdjFtTlRhOElzR3k2cjZNaFdoSjhNIiwKICAgICJhbGciOiAiUlMyNTYiLAogICAgImRxIjogIlNVV29lTlFCVmJvRUhldWdLd3FJWUNJMjNacmdBZFZKS2VHZXFZVlpnVl9tQ2J6dFEyVEZ6Q1dybkVLeFdVU05jVWxVdXFJVUZiLUg3NFdzbTY4SVNQUzdjNU5ZWTlHdVFqNmUtRU5FWkxoV0hkSWk3YmlYbVBmaU5UdGlPbUxCMG1UbnF5RGx2bExhd2RUUW5sdmVrbWJNeDlVY2YzRVJfUE1uYmw5ckRTayIsCiAgICAibiI6ICJ3dmRJVjZlcl9qTGtDOWdFcTlOSHM4aEZCdDROdWs0YWdUamRsS01zcHA2c25RaUkxNGZHUHo3Q1Nxa1Babl9yRHBoS2lCMXNRYmZtVHlBZEdNM0pKeW53M21Dcmd0cGZvN1IwRzMxVUJPbHdYR1gwWWNCenB1SlFaNEhybEVVYUthc0RBWllPTTVPNk1IMERMX2wzaG0xaDl5VnVZUVluU3A1TE9PRmVfWWdNanotcTlEd0FsRGE0dkk3QTVaUzl3QzNBVXp2cV9seWJZaVFQcjFzeXctemxySHhrRVp5dEJmaDVzNE8tcHg1b3B4Vm8wRUtmUWpSMjBYaHh3aFFFVWtyQ1NHbE5VejAyZHN6UmlTVHlucWw5dUFOYU9fZTktZWtQWE1NS1NtdnpYMmpOWHp5anRGM0ZDV3RZMndqMXNNLVRBZm1UVDN3bjlKc2tMU1RRRnciCn0=
+      - JWE_USERINFO_PRIVATE_KEY=ewogICAgImt0eSI6ICJSU0EiLAogICAgIm4iOiAiN0FEVXdvT1FtWEl2cXhsaWdLalZ1LU43SWk3Mjh1by1aRU1paTdxZ2hhT1Q1c2VlbUxybjRXMDlBVEVSM25seWs0S29CSGlYQnRJWUJJQ01VYlp1NXFyOVRjSDlQZ1dKeHVTbHBtdTVHYWtsNktsVzdUS2FhdWtRRENmM0dNTlhndElqMTVEUUJrTHgtbHlCRGJpcGNsTGY0RHNLM0g4bF9vZFlSREVTN0htZWs4Q0cyaHF3dUk1eWFrUVJUSXprRkRRQXA5X2tZQ09nSTdaRHZjcktwNHhIcEJ3UVlUOWllNzhPLTZDRk5sazlQTXhtcVpSZWdrR3ljaGVsSWFHOGYwb0xteXhweFpIRlpkUmFqd3lNbU5tSUkwaFd0ZTR5MG5sMEMyMkpBMWRzaS01Mm8yazVlT05kb1Rib3lsd2M1NFAwYWJqSVRPcmtxbGlMZnpsNjNRIiwKICAgICJlIjogIkFRQUIiLAogICAgImQiOiAiVkhXZnJ0VWl4S2VHdzdiYjk2dDBnajlRNjlUZTctUkEyLVRpMGhyQ0k5Rjh0dFN0djM3MFNVcXMwR1pkUEw4OTctaU1kTDByWDNlRXZPZThULW40R25rTEdlN1kwSDl1NVUwaXMwSk9CZzd3MENqNlFQMGhJaTJ5WG9kVy1QZV9zOE84ckFMWlQ4UlprUDNWLWJFaWd4V0JwVi03N1ZsYm9aR1NWeVV3M291ZjhsZTV4UHFPcFhwenl4NUQyRW9OSVZNWUMybndnRjJUZGNkNUt0ZkpYTjB2NFphbER4ejB0MkFYWVFDNVFPQjE0NWNHamtJTW5EY1pKQTc4ZWwyaXR2N1YwSGI0b3Uta3RhN2xnOGFBcl96NVFTZXJHVUtoSDhldmtPM25ZRUJjMG4tSW1TTm5ONmZkcXRZM2dGNWlFYWFwTHF2a1laYzNNdURUZURKekNRIiwKICAgICJwIjogIjlfUlpjN2p6UXJOSVdpWF9KamJRZkNBNzZVX3FwaVgwcmU2N3ByZEctUWVObEJaNi1INng4ZF9NSlR6NXBaSUltWlVMbFVWbnNZWFA5eEdlTDJ2REVkOWJxVXh0SUhSQ3Z0MlVCdE1BU3VmOVVrblB6M01lMlRkTHpRN2tFZUptMmwyRlhMYTVEeEZpQjdSNmJwbGswd1pGcUpRM2xDOEdRWDhQM3FMT2lKOCIsCiAgICAicSI6ICI4NmsxTnItU0RTa2c0ZlZhYnFCUVQzZHkwMzJTT1NqT1RvaHN1dWdfaUZBWFhIRjJmdmY5UnRLd2lxOWtQdW1FNUZDcDJlbXVFd1E0Q3RqZGhjTTA1NmVJYmVLWHprangyLTF2X1p1bTZyY0ZHeXZfOVcwNmdsWWZEaUJZQ2ZvbWxxV2tWZml4MGlKYm52QTFYakxvX0RWZU9YQktETEtQUUhQMG9FYVpmd00iLAogICAgImRwIjogImdSZ21EbnNIb18yRnVQRzVjdUx0RHdNVlRqYS1lM3lkZElVc0NfTzJMdWZBelk0YXZnX3dnM2E2YWRUaVFWTFR5V3B4R21tRlFFYmo3TVd1YnhBVEF0WWdlZmVCaFhraVd3OHdCNUdKd0hZaVROcURLSVhPVk5kV1RzX203R3pNa2ZwSS1lbGtWalQ5cmZkSUd4Y2dDRUptdUF0YkdIcVhMamlDUWE3UUN3OCIsCiAgICAiZHEiOiAiRzFHNWVhMzRfaWpDV3hOYlZGUDlMU3ZEWUJzUUxnQjVRU3ppcEFJdVBXWmRlQ3Z3a1VQVXpnQUpjME1fQmg3QW02aV9vb01rMVZUX3c1ZVZIczVJUEVENGR2bVU4N2dTQmdxVkotWXZ6TmxBWlUtRm4wcmo2SUVuY2pvR0pQZzdJMkRuRUF5V1EyMC13STlHTEkyZ3VjWnlEaGFjOXRkLVlFZWdBZWhvaFdrIiwKICAgICJxaSI6ICJvbndWZV93ZW5wdnV5MnZXeExUa1U4NjR3a21DVTlBb19DMFZWcXQzVktsOU9ZTHdKOE5zMG1CRm5UVHhISVRPREgxT1lDWFN3ZkkzQjBQNFhnTklqY294M0VaaWotVFBuSmdRZHRHaTB3ekVNSm1wc2tZbnJmN1pLRTB3Y0hZXzVUbVdKWE1qOGt2QnY2OXB0Rnh2UlczUXZ6aDVrSFNUZnBMME9qanUxMTQiCn0=
+      - USERINFO_RESPONSE_TYPE=jwt
+
+  health-portal-ui:
+    image: 'mosipdev/mock-relying-party-ui:develop'
+    user: root
+    ports:
+      - 5002:3000
+    environment:
+      - container_user=mosip
+      - MOCK_RELYING_PARTY_SERVER_URL=http://localhost:5002/mock-relying-party-service
+      - ESIGNET_UI_BASE_URL=http://localhost:3000
+      - REDIRECT_URI=http://localhost:5002/userprofile
+      - REDIRECT_URI_REGISTRATION=http://localhost:5001/registration
+      - CLIENT_ID=IIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKC
+      - ACRS=mosip:idp:acr:generated-code
+      - SIGN_IN_BUTTON_PLUGIN_URL=https://esignet.esdev.mosip.net/plugins/sign-in-button-plugin.js
+      - CLAIMS_LOCALES=en
+      - DEFAULT_LANG=en
+      - SCOPE_USER_PROFILE=openid email
+      - CLAIMS_USER_PROFILE=%7B%0A%20%20%22userinfo%22%3A%20%7B%0A%20%20%20%20%22name%22%3A%20%7B%20%22essential%22%20%3A%20true%7D%2C%0A%20%20%20%20%20%22picture%22%3A%20%7B%20%22essential%22%20%3A%20true%7D%0A%20%20%7D%0A%7D
+      - CLAIMS_REGISTRATION=%7B%22userinfo%22%3A%7B%22name%22%3A%7B%22essential%22%3Afalse%7D%2C%22phone_number%22%3A%7B%22essential%22%3Atrue%7D%20%7D%2C%22id_token%22%3A%7B%7D%7D
+    volumes:
+      - ./healthportal-nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - health-portal-service
