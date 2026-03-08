@@ -234,7 +234,7 @@ func main() {
                             {
                                 "id": "test-identity-verifier",
                                 "displayName": {
-                                "eng": "Westalis Tax ID Verifier",
+                                "eng": "Westalis Tax ID Verifier (eidas)",
                                 "fra": "Vérificateur d'identité fictif2",
                                 "ara": "التحقق من الهوية الوهمية",
                                 "khm": "Mock អត្តសញ្ញាណប័ណ្ណ Verifier2"

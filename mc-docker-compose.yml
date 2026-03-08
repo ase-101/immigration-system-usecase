@@ -40,7 +40,7 @@ services:
       - 8080:8080
 
   immigration-system:
-    image: 'anushas/mock-identity-system:develop'
+    image: 'mosipdev/mock-identity-system:develop'
     user: root
     ports:
       - 8082:8082
@@ -59,7 +59,6 @@ services:
       - database
 
   esignet:
-    #image: 'mosipdev/esignet-with-plugins:develop'
     image: 'mosipid/esignet-with-plugins:1.7.1'
     user: root
     ports: 
@@ -84,7 +83,6 @@ services:
       - redis-server
 
   esignet-ui:
-    #image: 'mosipdev/oidc-ui:develop'
     image: 'mosipid/oidc-ui:1.7.1'
     user: root
     ports:
@@ -140,7 +138,6 @@ services:
         - ./oidckeystore.p12:/home/mosip/oidckeystore.p12
 
   signup-ui:
-    #image: 'zesu22/signup-ui:ES-2797'
     image: 'mosipdev/signup-ui:ES-2797'
     platform: linux/amd64  # Add this line
     user: root
@@ -186,7 +183,7 @@ services:
       - SIGN_IN_BUTTON_PLUGIN_URL=https://esignet.esdev.mosip.net/plugins/sign-in-button-plugin.js
       - CLAIMS_LOCALES=en
       - DEFAULT_LANG=en
-      - SCOPE_USER_PROFILE=openid email
+      - SCOPE_USER_PROFILE=openid profile
       - CLAIMS_USER_PROFILE=%7B%0A%20%20%22userinfo%22%3A%20%7B%0A%20%20%20%20%22verified_claims%22%3A%20%7B%0A%20%20%20%20%20%20%22verification%22%3A%20%7B%0A%20%20%20%20%20%20%20%20%22trust_framework%22%3A%20%7B%22value%22%20%3A%20%22eidas%22%7D%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%22claims%22%3A%20%7B%0A%20%20%20%20%20%20%20%20%22name%22%3A%20%7B%20%22essential%22%20%3A%20true%7D%2C%0A%20%20%20%20%20%20%20%20%22country%22%3A%20%7B%20%22essential%22%20%3A%20true%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D
       - CLAIMS_REGISTRATION=%7B%22userinfo%22%3A%7B%22name%22%3A%7B%22essential%22%3Afalse%7D%2C%22phone_number%22%3A%7B%22essential%22%3Atrue%7D%20%7D%2C%22id_token%22%3A%7B%7D%7D
       - ENABLE_FOREIGNER_SIGNIN=true
@@ -196,7 +193,7 @@ services:
       - CLIENT_ID_FOREIGNER=IIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7ADUw
       - ACRS_FOREIGNER=mosip:idp:acr:generated-code%20mosip:idp:acr:biometrics
       - CLAIMS_LOCALES_FOREIGNER=en
-      - SCOPE_USER_PROFILE_FOREIGNER=openid email
+      - SCOPE_USER_PROFILE_FOREIGNER=openid profile
       - CLAIMS_USER_PROFILE_FOREIGNER=%7B%0A%20%20%22userinfo%22%3A%20%7B%0A%20%20%20%20%22verified_claims%22%3A%20%7B%0A%20%20%20%20%20%20%22verification%22%3A%20%7B%0A%20%20%20%20%20%20%20%20%22trust_framework%22%3A%20%7B%22value%22%20%3A%20%22eidas%22%7D%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%22claims%22%3A%20%7B%0A%20%20%20%20%20%20%20%20%22name%22%3A%20%7B%20%22essential%22%20%3A%20true%7D%2C%0A%20%20%20%20%20%20%20%20%22country%22%3A%20%7B%20%22essential%22%20%3A%20true%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D
       - CLAIMS_REGISTRATION_FOREIGNER=%7B%22userinfo%22%3A%7B%22name%22%3A%7B%22essential%22%3Afalse%7D%2C%22phone_number%22%3A%7B%22essential%22%3Atrue%7D%20%7D%2C%22id_token%22%3A%7B%7D%7D
     volumes:
