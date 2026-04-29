@@ -81,7 +81,16 @@ claims within the OIDC protocol.
 
 We will attempt to access **Omera Banking** as a foreigner, a service that requires high-assurance identity data.
 
-Navigate to : `http://localhost:5001/` and click **"Login as Foreigner"**.
+1. Navigate to : `http://localhost:5001/` and click **"Login as Foreigner"**.
+2. This triggers an OIDC authorization request to eSignet with specific claims requirements.
+3. Enter the same email and OTP to authenticate with eSignet.
+4. eSignet identifies the "Trust Gap" due to the mismatch between the initial verification method (Westalis NID) and the RP's requirement (eIDAS).
+5. Complete the additional verification step (eIDAS-compliant) to satisfy the RP's requirements.
+6. Upon successful verification, within 5 seconds user will be redirected to eSignet consent screen.
+7. Consent screen displays the claims being shared with Omera Banking, including "name" and "country" verified under the eIDAS framework.
+8. Upon successful authorization, user is redirected back to Omera Banking with access to the requested claims.
+9. Omera Banking receives the verified claims and grants access to the user based on the high-assurance identity data.
+10. The user can now access banking services that require verified identity information, such as opening an account or applying for a loan.
 
 ![screen3.png](screen3.png)
 
