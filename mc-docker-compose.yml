@@ -34,7 +34,7 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
 
   local-platform-service:
-    image: 'anushas/mock-platform:local'
+    image: 'mosipint/mock-platform:ES-2797'
     user: root
     ports: 
       - 8080:8080
@@ -96,46 +96,46 @@ services:
       - esignet
 
   signup:
-      image: 'anushas/signup-with-plugins:ES-2797'
-      user: root
-      ports: 
-        - 8089:8089
-      environment:
-        - container_user=mosip
-        - active_profile_env=default,local
-        - plugin_name_env=esignet-mock-plugin.jar
-        - MOSIP_SIGNUP_DOMAIN_URL=http://localhost:4000
-        - MOSIP_ESIGNET_DOMAIN_URL=http://esignet:8088
-        - MOSIP_ESIGNET_MOCK_DOMAIN_URL=http://immigration-system:8082
-        - KEYCLOAK_EXTERNAL_URL=http://local-platform-service:8080
-        - SPRING_CACHE_TYPE=redis
-        - SPRING_DATA_REDIS_HOST=redis-server
-        - SPRING_DATA_REDIS_PASSWORD=
-        - MOSIP_INTERNAL_DOMAIN_URL=http://local-platform-service:8080
-        - MOSIP_SIGNUP_CLIENT_SECRET=test
-        - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-        - SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
-        - MOSIP_SIGNUP_MOCK_GET_SCHEMA_ENDPOINT=http://local-platform-service:8080/masterdata/ui-spec
-        - MOSIP_SIGNUP_IDENTIFIER_REGEX=^[a-zA-Z_@\\.]+
-        - MOSIP_SIGNUP_IDENTIFIER_PREFIX=
-        - MANAGEMENT_TRACING_ENABLED=false
-        - MOSIP_SIGNUP_IDENTIFIER_ALLOWED_CHARACTERS=^[a-zA-Z_@\\.]+
-        - MOSIP_SIGNUP_IDENTIFIER_MIN_LENGTH=8
-        - MOSIP_SIGNUP_IDENTIFIER_MAX_LENGTH=20
-        - MOSIP_SIGNUP_IDENTIFIER_NAME=email
-        - MOSIP_SIGNUP_MOCK_MANDATORY_ATTRIBUTES_CREATE=email,passportId,fullName,consent
-        - MOSIP_SIGNUP_MOCK_MANDATORY_ATTRIBUTES_UPDATE=
-        - MOSIP_SIGNUP_MOCK_USERNAME_FIELD=email
-        - MOSIP_SIGNUP_RP_ACR_VALUES=mosip:idp:acr:generated-code
-        - MOSIP_SIGNUP_CONFIG_SERVER_URL=http://local-platform-service:8080/
-        - MOSIP_SIGNUP_MOCK_CONFIG_SERVER_URL=http://local-platform-service:8080/
-        - MOSIP_SIGNUP_MOCK_IDENTITY_VERIFICATION_STORY_NAME=identity_verifier_story.json
-        - MOSIP_SIGNUP_TEST_IDENTITY_VERIFICATION_STORY_NAME=test_verifier_story.json
-        - MOSIP_SIGNUP_RP_UI_CONFIG={'client_id':'$${mosip.signup.oauth.client-id}','redirect_uri_verification':'http://localhost:4000/identity-verification','redirect_uri_signin':'http://localhost:3000/login','redirect_uri_consent':'http://localhost:3000/consent','authorization_endpoint':'http://localhost:3000/authorize','response_type':'code','scope':'openid','claims':'','acr_values':'$${mosip.signup.rp.acr_values}','expiry_time':$${mosip.signup.rp.expiry_time},'redirect_delay':$${mosip.signup.rp.redirect_delay}}
-      depends_on:
-        - redis-server
-      volumes:
-        - ./oidckeystore.p12:/home/mosip/oidckeystore.p12
+    image: 'mosipdev/signup-with-plugins:ES-2797'
+    user: root
+    ports:
+      - 8089:8089
+    environment:
+      - container_user=mosip
+      - active_profile_env=default,local
+      - plugin_name_env=esignet-mock-plugin.jar
+      - MOSIP_SIGNUP_DOMAIN_URL=http://localhost:4000
+      - MOSIP_ESIGNET_DOMAIN_URL=http://esignet:8088
+      - MOSIP_ESIGNET_MOCK_DOMAIN_URL=http://immigration-system:8082
+      - KEYCLOAK_EXTERNAL_URL=http://local-platform-service:8080
+      - SPRING_CACHE_TYPE=redis
+      - SPRING_DATA_REDIS_HOST=redis-server
+      - SPRING_DATA_REDIS_PASSWORD=
+      - MOSIP_INTERNAL_DOMAIN_URL=http://local-platform-service:8080
+      - MOSIP_SIGNUP_CLIENT_SECRET=test
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_AUTOCONFIGURE_EXCLUDE=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - MOSIP_SIGNUP_MOCK_GET_SCHEMA_ENDPOINT=http://local-platform-service:8080/masterdata/ui-spec
+      - MOSIP_SIGNUP_IDENTIFIER_REGEX=^[a-zA-Z_@\\.]+
+      - MOSIP_SIGNUP_IDENTIFIER_PREFIX=
+      - MANAGEMENT_TRACING_ENABLED=false
+      - MOSIP_SIGNUP_IDENTIFIER_ALLOWED_CHARACTERS=^[a-zA-Z_@\\.]+
+      - MOSIP_SIGNUP_IDENTIFIER_MIN_LENGTH=8
+      - MOSIP_SIGNUP_IDENTIFIER_MAX_LENGTH=20
+      - MOSIP_SIGNUP_IDENTIFIER_NAME=email
+      - MOSIP_SIGNUP_MOCK_MANDATORY_ATTRIBUTES_CREATE=email,passportId,fullName,consent
+      - MOSIP_SIGNUP_MOCK_MANDATORY_ATTRIBUTES_UPDATE=
+      - MOSIP_SIGNUP_MOCK_USERNAME_FIELD=email
+      - MOSIP_SIGNUP_RP_ACR_VALUES=mosip:idp:acr:generated-code
+      - MOSIP_SIGNUP_CONFIG_SERVER_URL=http://local-platform-service:8080/
+      - MOSIP_SIGNUP_MOCK_CONFIG_SERVER_URL=http://local-platform-service:8080/
+      - MOSIP_SIGNUP_MOCK_IDENTITY_VERIFICATION_STORY_NAME=identity_verifier_story.json
+      - MOSIP_SIGNUP_TEST_IDENTITY_VERIFICATION_STORY_NAME=test_verifier_story.json
+      - MOSIP_SIGNUP_RP_UI_CONFIG={'client_id':'$${mosip.signup.oauth.client-id}','redirect_uri_verification':'http://localhost:4000/identity-verification','redirect_uri_signin':'http://localhost:3000/login','redirect_uri_consent':'http://localhost:3000/consent','authorization_endpoint':'http://localhost:3000/authorize','response_type':'code','scope':'openid','claims':'','acr_values':'$${mosip.signup.rp.acr_values}','expiry_time':$${mosip.signup.rp.expiry_time},'redirect_delay':$${mosip.signup.rp.redirect_delay}}
+    depends_on:
+      - redis-server
+    volumes:
+      - ./oidckeystore.p12:/home/mosip/oidckeystore.p12
 
   signup-ui:
     image: 'mosipdev/signup-ui:ES-2797'
@@ -168,7 +168,7 @@ services:
       - USERINFO_RESPONSE_TYPE=jwt
 
   omera-bank-ui:
-    image: 'anushas/omera-bank-ui:local'
+    image: 'mosipint/mock-relying-party-ui-bank:ES-2797'
     user: root
     ports:
       - 5001:3000
